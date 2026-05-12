@@ -1,0 +1,200 @@
+import { Router } from "express";
+import { requireAdmin, requireSuperAdmin } from "../../middleware/admin.js";
+import { requireAuth } from "../../middleware/auth.js";
+import { validate } from "../../middleware/validate.js";
+import * as courseController from "./course.controller.js";
+import {
+  addLectureSchema,
+  addStepSchema,
+  courseIdParamsSchema,
+  createCourseSchema,
+  createDailyTaskSchema,
+  freezeCourseSchema,
+  lectureIdParamsSchema,
+  reportCourseSchema,
+  rejectCourseSchema,
+  reviewReportSchema,
+  updateCourseSchema,
+  updateDailyTaskSchema,
+  updateLectureSchema,
+  updateStepSchema,
+  stepIdParamsSchema,
+  taskIdParamsSchema
+} from "./course.schemas.js";
+
+export const courseRouter = Router();
+export const adminCourseRouter = Router();
+
+courseRouter.get("/my-courses", requireAuth, courseController.listMyCourses);
+courseRouter.get("/", courseController.listCourses);
+courseRouter.get("/:courseId", validate(courseIdParamsSchema), courseController.getCourse);
+courseRouter.post(
+  "/:courseId/join",
+  requireAuth,
+  validate(courseIdParamsSchema),
+  courseController.joinCourse
+);
+courseRouter.post(
+  "/:courseId/report",
+  requireAuth,
+  validate(reportCourseSchema),
+  courseController.reportCourse
+);
+courseRouter.get(
+  "/:courseId/progress",
+  requireAuth,
+  validate(courseIdParamsSchema),
+  courseController.getMyCourseProgress
+);
+courseRouter.get(
+  "/:courseId/resume",
+  requireAuth,
+  validate(courseIdParamsSchema),
+  courseController.getCourseResume
+);
+courseRouter.get(
+  "/:courseId/daily-task-history",
+  requireAuth,
+  validate(courseIdParamsSchema),
+  courseController.getDailyTaskHistory
+);
+courseRouter.post(
+  "/steps/:stepId/complete",
+  requireAuth,
+  validate(stepIdParamsSchema),
+  courseController.completeStep
+);
+courseRouter.post(
+  "/daily-tasks/:taskId/complete",
+  requireAuth,
+  validate(taskIdParamsSchema),
+  courseController.completeDailyTask
+);
+
+adminCourseRouter.use(requireAdmin);
+adminCourseRouter.get("/courses", courseController.listAdminCourses);
+adminCourseRouter.get(
+  "/courses-pending-approval",
+  requireSuperAdmin,
+  courseController.listPendingApprovalCourses
+);
+adminCourseRouter.post("/courses", validate(createCourseSchema), courseController.createCourse);
+adminCourseRouter.get(
+  "/courses/:courseId",
+  validate(courseIdParamsSchema),
+  courseController.getAdminCourse
+);
+adminCourseRouter.get(
+  "/courses/:courseId/analytics",
+  validate(courseIdParamsSchema),
+  courseController.getCourseAnalytics
+);
+adminCourseRouter.patch(
+  "/courses/:courseId",
+  validate(updateCourseSchema),
+  courseController.updateCourse
+);
+adminCourseRouter.patch(
+  "/courses/:courseId/online",
+  requireSuperAdmin,
+  validate(courseIdParamsSchema),
+  courseController.publishCourse
+);
+adminCourseRouter.patch(
+  "/courses/:courseId/offline",
+  requireSuperAdmin,
+  validate(courseIdParamsSchema),
+  courseController.unpublishCourse
+);
+adminCourseRouter.patch(
+  "/courses/:courseId/submit-review",
+  validate(courseIdParamsSchema),
+  courseController.submitCourseForReview
+);
+adminCourseRouter.patch(
+  "/courses/:courseId/approve",
+  requireSuperAdmin,
+  validate(courseIdParamsSchema),
+  courseController.approveCourse
+);
+adminCourseRouter.patch(
+  "/courses/:courseId/freeze",
+  requireSuperAdmin,
+  validate(freezeCourseSchema),
+  courseController.freezeCourse
+);
+adminCourseRouter.patch(
+  "/courses/:courseId/unfreeze",
+  requireSuperAdmin,
+  validate(courseIdParamsSchema),
+  courseController.unfreezeCourse
+);
+adminCourseRouter.patch(
+  "/courses/:courseId/reject",
+  requireSuperAdmin,
+  validate(rejectCourseSchema),
+  courseController.rejectCourse
+);
+adminCourseRouter.delete(
+  "/courses/:courseId",
+  validate(courseIdParamsSchema),
+  courseController.deleteCourse
+);
+adminCourseRouter.post(
+  "/courses/:courseId/lectures",
+  validate(addLectureSchema),
+  courseController.addLecture
+);
+adminCourseRouter.patch(
+  "/lectures/:lectureId",
+  validate(updateLectureSchema),
+  courseController.updateLecture
+);
+adminCourseRouter.delete(
+  "/lectures/:lectureId",
+  validate(lectureIdParamsSchema),
+  courseController.deleteLecture
+);
+adminCourseRouter.post(
+  "/lectures/:lectureId/steps",
+  validate(addStepSchema),
+  courseController.addStep
+);
+adminCourseRouter.patch(
+  "/steps/:stepId",
+  validate(updateStepSchema),
+  courseController.updateStep
+);
+adminCourseRouter.delete(
+  "/steps/:stepId",
+  validate(stepIdParamsSchema),
+  courseController.deleteStep
+);
+adminCourseRouter.post(
+  "/courses/:courseId/daily-tasks",
+  validate(createDailyTaskSchema),
+  courseController.createDailyTask
+);
+adminCourseRouter.patch(
+  "/daily-tasks/:taskId",
+  validate(updateDailyTaskSchema),
+  courseController.updateDailyTask
+);
+adminCourseRouter.delete(
+  "/daily-tasks/:taskId",
+  validate(taskIdParamsSchema),
+  courseController.deleteDailyTask
+);
+adminCourseRouter.get("/course-reports", requireSuperAdmin, courseController.listCourseReports);
+adminCourseRouter.patch(
+  "/course-reports/:reportId/resolve",
+  requireSuperAdmin,
+  validate(reviewReportSchema),
+  courseController.resolveCourseReport
+);
+adminCourseRouter.patch(
+  "/course-reports/:reportId/dismiss",
+  requireSuperAdmin,
+  validate(reviewReportSchema),
+  courseController.dismissCourseReport
+);

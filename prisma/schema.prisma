@@ -1,0 +1,307 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String                     @id @default(cuid())
+  email              String                     @unique
+  profilePicture     String?
+  dogName            String?
+  dogAge             Int?
+  gender             String?
+  breedId            String?
+  bio                String?
+  isFrozen           Boolean                    @default(false)
+  freezeReason       String?
+  frozenAt           DateTime?
+  isBlocked          Boolean                    @default(false)
+  blockReason        String?
+  blockedAt          DateTime?
+  breed              Breed?                     @relation(fields: [breedId], references: [id], onDelete: SetNull)
+  trainingGoals      UserTrainingGoal[]
+  courseEnrollments  UserCourseEnrollment[]
+  stepCompletions    UserCourseStepCompletion[]
+  dailyTaskLogs      UserCourseDailyTaskLog[]
+  courseReports      CourseReport[]
+  isProfileCompleted Boolean                    @default(false)
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+  deletedAt          DateTime?
+
+  @@index([breedId])
+  @@index([deletedAt])
+  @@index([isBlocked])
+  @@index([isFrozen])
+}
+
+model Breed {
+  id               String   @id @default(cuid())
+  title            String   @unique
+  icon             String?
+  shortDescription String?
+  isActive         Boolean  @default(true)
+  deletedAt        DateTime?
+  users            User[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([deletedAt])
+}
+
+model TrainingGoal {
+  id               String             @id @default(cuid())
+  title            String             @unique
+  icon             String?
+  shortDescription String?
+  isActive         Boolean            @default(true)
+  deletedAt        DateTime?
+  users            UserTrainingGoal[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@index([deletedAt])
+}
+
+model UserTrainingGoal {
+  userId         String
+  trainingGoalId String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trainingGoal   TrainingGoal @relation(fields: [trainingGoalId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  @@id([userId, trainingGoalId])
+  @@index([trainingGoalId])
+}
+
+model EmailOtp {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AdminUser {
+  id              String           @id @default(cuid())
+  email           String           @unique
+  passwordHash    String
+  role            String           @default("ADMIN")
+  name            String?
+  profilePicture  String?
+  bio             String?
+  expertise       String?
+  experienceYears Int?
+  isActive        Boolean          @default(true)
+  isFrozen        Boolean          @default(false)
+  freezeReason    String?
+  frozenAt        DateTime?
+  lastLoginAt     DateTime?
+  courses         TrainingCourse[]
+  reviewedReports CourseReport[]   @relation("CourseReportReviewer")
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model TrainingCourse {
+  id               String                  @id @default(cuid())
+  trainerId        String?
+  trainer          AdminUser?              @relation(fields: [trainerId], references: [id], onDelete: SetNull)
+  title            String
+  description      String?
+  category         String?
+  level            String                  @default("BEGINNER")
+  estimatedDays    Int?
+  estimatedMinutes Int?
+  isPremium        Boolean                 @default(false)
+  priceAmount      Int?
+  currencyCode     String?
+  thumbnailUrl     String?
+  thumbnailKey     String?
+  isPublished      Boolean                 @default(true)
+  isFrozen         Boolean                 @default(false)
+  freezeReason     String?
+  frozenAt         DateTime?
+  frozenById       String?
+  approvalStatus   String                  @default("DRAFT")
+  rejectionReason  String?
+  reviewedAt       DateTime?
+  reviewedById     String?
+  viewCount        Int                     @default(0)
+  lectures         TrainingCourseLecture[]
+  dailyTasks       CourseDailyTask[]
+  enrollments      UserCourseEnrollment[]
+  reports          CourseReport[]
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+  deletedAt        DateTime?
+
+  @@index([category])
+  @@index([deletedAt])
+  @@index([isFrozen])
+  @@index([level])
+  @@index([trainerId])
+}
+
+model TrainingCourseLecture {
+  id          String               @id @default(cuid())
+  courseId    String
+  course      TrainingCourse       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  videoUrl    String?
+  videoKey    String?
+  sortOrder   Int                  @default(0)
+  steps       TrainingCourseStep[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  deletedAt   DateTime?
+
+  @@index([courseId])
+  @@index([deletedAt])
+}
+
+model TrainingCourseStep {
+  id          String                     @id @default(cuid())
+  lectureId   String
+  lecture     TrainingCourseLecture      @relation(fields: [lectureId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  sortOrder   Int                        @default(0)
+  completions UserCourseStepCompletion[]
+  createdAt   DateTime                   @default(now())
+  updatedAt   DateTime                   @updatedAt
+  deletedAt   DateTime?
+
+  @@index([lectureId])
+  @@index([deletedAt])
+}
+
+model CourseDailyTask {
+  id          String                   @id @default(cuid())
+  courseId    String
+  course      TrainingCourse           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  dayNumber   Int
+  logs        UserCourseDailyTaskLog[]
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+  deletedAt   DateTime?
+
+  @@unique([courseId, dayNumber])
+  @@index([courseId])
+  @@index([deletedAt])
+}
+
+model UserCourseEnrollment {
+  id                    String         @id @default(cuid())
+  userId                String
+  user                  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId              String
+  course                TrainingCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progressPercent       Int            @default(0)
+  completedStepsCount   Int            @default(0)
+  totalStepsCount       Int            @default(0)
+  currentStreak         Int            @default(0)
+  longestStreak         Int            @default(0)
+  lastTaskCompletedDate DateTime?
+  joinedAt              DateTime       @default(now())
+  completedAt           DateTime?
+  updatedAt             DateTime       @updatedAt
+
+  @@unique([userId, courseId])
+  @@index([courseId])
+}
+
+model UserCourseStepCompletion {
+  id          String             @id @default(cuid())
+  userId      String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stepId      String
+  step        TrainingCourseStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  completedAt DateTime           @default(now())
+
+  @@unique([userId, stepId])
+  @@index([stepId])
+}
+
+model UserCourseDailyTaskLog {
+  id          String          @id @default(cuid())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId      String
+  task        CourseDailyTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  courseId    String
+  taskDate    DateTime
+  completedAt DateTime        @default(now())
+
+  @@unique([userId, taskId, taskDate])
+  @@index([userId, courseId])
+  @@index([taskId])
+}
+
+model Quote {
+  id        String   @id @default(cuid())
+  text      String
+  author    String?
+  source    String   @default("admin")
+  isActive  Boolean  @default(true)
+  deletedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([deletedAt])
+}
+
+model QuoteCache {
+  id        String   @id @default("daily-dog-quote")
+  quoteId   String?
+  text      String
+  author    String?
+  source    String
+  expiresAt DateTime
+  updatedAt DateTime @updatedAt
+}
+
+model CourseReport {
+  id           String         @id @default(cuid())
+  userId       String
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId     String
+  course       TrainingCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  reason       String
+  details      String?
+  status       String         @default("OPEN")
+  reviewNote   String?
+  reviewedAt   DateTime?
+  reviewedById String?
+  reviewedBy   AdminUser?     @relation("CourseReportReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([courseId, status])
+  @@index([userId])
+  @@index([reviewedById])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorType   String
+  actorId     String?
+  actorEmail  String?
+  action      String
+  targetType  String
+  targetId    String?
+  metadata    String?
+  createdAt   DateTime @default(now())
+
+  @@index([actorType, createdAt])
+  @@index([targetType, targetId])
+  @@index([action, createdAt])
+}

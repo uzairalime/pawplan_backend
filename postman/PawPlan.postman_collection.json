@@ -1,0 +1,170 @@
+{
+  "info": {
+    "name": "PawPlan API",
+    "_postman_id": "2e8ec2aa-0b9a-4f51-b7e7-6f7d6f673001",
+    "description": "Core PawPlan backend flows for auth, profile, courses, trainer admin, user admin, reports, and moderation.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4000" },
+    { "key": "adminToken", "value": "" },
+    { "key": "userToken", "value": "" },
+    { "key": "courseId", "value": "" },
+    { "key": "trainerId", "value": "" },
+    { "key": "userId", "value": "" },
+    { "key": "reportId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Admin Login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/admin/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@pawplan.com\",\n  \"password\": \"Password@123\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Request OTP",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/auth/request-otp",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"user@pawplan.app\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Verify OTP",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/auth/verify-otp",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"user@pawplan.app\",\n  \"otp\": \"1122\"\n}"
+        }
+      }
+    },
+    {
+      "name": "List Public Courses",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/courses?page=1&limit=10"
+      }
+    },
+    {
+      "name": "Create Trainer Course Draft",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "url": "{{baseUrl}}/api/admin/courses",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Loose Leash Walking\",\n  \"category\": \"Leash Skills\",\n  \"level\": \"BEGINNER\",\n  \"estimatedDays\": 14,\n  \"estimatedMinutes\": 20,\n  \"lectures\": [\n    {\n      \"title\": \"Getting Started\",\n      \"description\": \"Set up the walk and rewards.\",\n      \"steps\": [\n        { \"title\": \"Start in a quiet area\" }\n      ]\n    }\n  ],\n  \"dailyTasks\": [\n    { \"title\": \"Practice for 10 minutes\", \"dayNumber\": 1 }\n  ]\n}"
+        }
+      }
+    },
+    {
+      "name": "Submit Course For Review",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/admin/courses/{{courseId}}/submit-review"
+      }
+    },
+    {
+      "name": "List Pending Approvals",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/admin/courses-pending-approval?page=1&limit=10"
+      }
+    },
+    {
+      "name": "Approve Course",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/admin/courses/{{courseId}}/approve"
+      }
+    },
+    {
+      "name": "Report Course",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{userToken}}" }
+        ],
+        "url": "{{baseUrl}}/api/courses/{{courseId}}/report",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reason\": \"UNSAFE_TRAINING\",\n  \"details\": \"This step may be too harsh for beginners.\"\n}"
+        }
+      }
+    },
+    {
+      "name": "List Course Reports",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/admin/course-reports?page=1&limit=10"
+      }
+    },
+    {
+      "name": "Resolve Course Report",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "url": "{{baseUrl}}/api/admin/course-reports/{{reportId}}/resolve",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reviewNote\": \"Resolved after course correction.\",\n  \"freezeCourse\": false\n}"
+        }
+      }
+    },
+    {
+      "name": "List Users",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/admin/users?page=1&limit=10"
+      }
+    },
+    {
+      "name": "Freeze User",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "url": "{{baseUrl}}/api/admin/users/{{userId}}/freeze",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reason\": \"Temporary moderation hold\"\n}"
+        }
+      }
+    },
+    {
+      "name": "List Audit Logs",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/admin/audit-logs?page=1&limit=20"
+      }
+    }
+  ]
+}
