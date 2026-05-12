@@ -16,7 +16,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "seed": "node --import tsx prisma/seed.ts"
+    "seed": "node --import tsx prisma/seed.ts",
+    "db:reset:demo": "prisma db push --force-reset && npm run prisma:generate && npm run seed && npm run test:setup"
   },
   "keywords": [
     "pawplan",

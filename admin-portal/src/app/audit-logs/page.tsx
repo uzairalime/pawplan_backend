@@ -1,13 +1,98 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { RefreshCw } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { ExternalLink, RefreshCw } from "lucide-react";
 import { AdminShell } from "@/components/AdminShell";
 import { PaginationControls } from "@/components/PaginationControls";
 import { RequireAuth } from "@/components/RequireAuth";
 import { api } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import type { AuditLog, PaginatedResponse, PaginationMeta } from "@/types/api";
+
+type AuditMetadata = Record<string, unknown>;
+
+function parseMetadata(metadata: string | null): AuditMetadata | null {
+  if (!metadata) return null;
+
+  try {
+    const parsed = JSON.parse(metadata) as AuditMetadata;
+    return typeof parsed === "object" && parsed !== null ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function prettifyToken(value: string) {
+  return value
+    .toLowerCase()
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function getActionTone(action: string) {
+  if (/(FREEZE|BLOCK|REJECT|DELETE|DISMISS)/.test(action)) return "deleted";
+  if (/(CREATE|APPROVE|ACTIVATE|RESOLVE|UNFREEZE|UNBLOCK)/.test(action)) return "";
+  if (/(UPDATE|SUBMIT|REFRESH|EXPORT)/.test(action)) return "offline";
+  return "neutral";
+}
+
+function getActionGroup(action: string) {
+  if (/(FREEZE|UNFREEZE|BLOCK|UNBLOCK|ACTIVATE|DEACTIVATE)/.test(action)) return "Access";
+  if (/(APPROVE|REJECT|RESOLVE|DISMISS|REPORT)/.test(action)) return "Moderation";
+  if (/(CREATE|UPDATE|DELETE|SUBMIT)/.test(action)) return "Content";
+  if (/EXPORT/.test(action)) return "Operations";
+  return "General";
+}
+
+function getTargetHref(log: AuditLog, metadata: AuditMetadata | null) {
+  const targetType = log.targetType.toUpperCase();
+
+  if (targetType === "TRAINER" && log.targetId) return `/admins/${log.targetId}`;
+  if (targetType === "USER" && log.targetId) return `/users/${log.targetId}`;
+  if (targetType === "COURSE" && log.targetId) return `/courses/${log.targetId}`;
+  if (targetType === "COURSE_REPORT") return "/reports";
+  if (targetType === "QUOTE") return "/quotes";
+  if (targetType === "BREED" || targetType === "TRAINING_GOAL") return "/catalog";
+
+  const metadataCourseId = typeof metadata?.courseId === "string" ? metadata.courseId : null;
+  const metadataTrainerId = typeof metadata?.trainerId === "string" ? metadata.trainerId : null;
+  const metadataUserId = typeof metadata?.userId === "string" ? metadata.userId : null;
+
+  if (metadataCourseId) return `/courses/${metadataCourseId}`;
+  if (metadataTrainerId) return `/admins/${metadataTrainerId}`;
+  if (metadataUserId) return `/users/${metadataUserId}`;
+
+  return null;
+}
+
+function MetadataList({ metadata }: { metadata: AuditMetadata | null }) {
+  if (!metadata || Object.keys(metadata).length === 0) {
+    return <span className="muted-row">-</span>;
+  }
+
+  return (
+    <div className="metadata-list">
+      {Object.entries(metadata).map(([key, value]) => (
+        <div className="metadata-row" key={key}>
+          <span className="metadata-key">{prettifyToken(key)}</span>
+          <span className="metadata-value">
+            {typeof value === "boolean"
+              ? value
+                ? "Yes"
+                : "No"
+              : value === null || value === undefined || value === ""
+                ? "-"
+                : typeof value === "object"
+                  ? JSON.stringify(value)
+                  : String(value)}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function AuditLogsPage() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
@@ -41,6 +126,21 @@ export default function AuditLogsPage() {
   useEffect(() => {
     void load().catch((err) => setError(err.message));
   }, [page, search, action, targetType]);
+
+  const decoratedLogs = useMemo(
+    () =>
+      logs.map((log) => {
+        const metadata = parseMetadata(log.metadata);
+        return {
+          ...log,
+          metadataObject: metadata,
+          actionTone: getActionTone(log.action),
+          actionGroup: getActionGroup(log.action),
+          targetHref: getTargetHref(log, metadata)
+        };
+      }),
+    [logs]
+  );
 
   return (
     <RequireAuth>
@@ -116,7 +216,7 @@ export default function AuditLogsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {logs.map((log) => (
+                  {decoratedLogs.map((log) => (
                     <tr key={log.id}>
                       <td className="muted-row">{new Date(log.createdAt).toLocaleString()}</td>
                       <td>
@@ -124,17 +224,33 @@ export default function AuditLogsPage() {
                         <div className="muted-row">{log.actorId || "-"}</div>
                       </td>
                       <td>
-                        <span className="badge neutral">{log.action}</span>
+                        <div className="compact">
+                          <span className={`badge ${log.actionTone}`.trim()}>{prettifyToken(log.action)}</span>
+                          <span className="badge neutral">{log.actionGroup}</span>
+                        </div>
                       </td>
                       <td>
-                        <strong>{log.targetType}</strong>
+                        <strong>{prettifyToken(log.targetType)}</strong>
                         <div className="muted-row">{log.targetId || "-"}</div>
+                        {log.targetHref ? (
+                          <Link className="inline-link" href={log.targetHref}>
+                            Open target
+                            <ExternalLink size={13} />
+                          </Link>
+                        ) : null}
                       </td>
-                      <td className="muted-row" style={{ maxWidth: 360 }}>
-                        {log.metadata || "-"}
+                      <td style={{ maxWidth: 360 }}>
+                        <MetadataList metadata={log.metadataObject} />
                       </td>
                     </tr>
                   ))}
+                  {decoratedLogs.length === 0 ? (
+                    <tr>
+                      <td className="muted-row" colSpan={5}>
+                        No audit events match the current filters.
+                      </td>
+                    </tr>
+                  ) : null}
                 </tbody>
               </table>
             </div>

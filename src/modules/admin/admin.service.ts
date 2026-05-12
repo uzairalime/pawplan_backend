@@ -248,6 +248,10 @@ export async function getTrainerDetail(adminId: string) {
       courses: {
         where: { deletedAt: null },
         include: {
+          reports: {
+            where: { status: "OPEN" },
+            select: { id: true }
+          },
           _count: {
             select: {
               lectures: true,
@@ -280,19 +284,27 @@ export async function getTrainerDetail(adminId: string) {
     }
   });
 
+  const courses = trainer.courses.map((course) => ({
+    ...course,
+    openReportCount: course.reports.length
+  }));
+
   return {
-    trainer,
+    trainer: {
+      ...trainer,
+      courses
+    },
     stats: {
-      courseCount: trainer.courses.length,
-      activeCourseCount: trainer.courses.filter((course) => course.isPublished).length,
-      frozenCourseCount: trainer.courses.filter((course) => course.isFrozen).length,
-      totalEnrollments: trainer.courses.reduce(
+      courseCount: courses.length,
+      activeCourseCount: courses.filter((course) => course.isPublished).length,
+      frozenCourseCount: courses.filter((course) => course.isFrozen).length,
+      totalEnrollments: courses.reduce(
         (sum, course) => sum + (course._count?.enrollments ?? 0),
         0
       ),
-      totalReports: trainer.courses.reduce((sum, course) => sum + (course._count?.reports ?? 0), 0),
+      totalReports: courses.reduce((sum, course) => sum + (course._count?.reports ?? 0), 0),
       openReportCount,
-      totalViews: trainer.courses.reduce((sum, course) => sum + course.viewCount, 0),
+      totalViews: courses.reduce((sum, course) => sum + course.viewCount, 0),
       totalCompletions
     }
   };

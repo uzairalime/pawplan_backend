@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, RefreshCw, Save, ShieldCheck, ShieldOff } from "lucide-react";
 import { useParams } from "next/navigation";
 import { AdminShell } from "@/components/AdminShell";
@@ -23,6 +23,7 @@ export default function TrainerDetailPage() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [courseFilter, setCourseFilter] = useState<"ALL" | "OPEN_REPORTS" | "FROZEN">("ALL");
 
   async function load() {
     const session = getSession();
@@ -43,6 +44,20 @@ export default function TrainerDetailPage() {
   useEffect(() => {
     void load().catch((err) => setError(err.message));
   }, [params.adminId]);
+
+  const filteredCourses = useMemo(() => {
+    if (!detail) return [];
+
+    if (courseFilter === "OPEN_REPORTS") {
+      return detail.trainer.courses.filter((course) => (course.openReportCount ?? 0) > 0);
+    }
+
+    if (courseFilter === "FROZEN") {
+      return detail.trainer.courses.filter((course) => course.isFrozen);
+    }
+
+    return detail.trainer.courses;
+  }, [courseFilter, detail]);
 
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -250,8 +265,36 @@ export default function TrainerDetailPage() {
 
                 <section className="panel">
                   <div className="panel-header">
-                    <strong>Trainer courses</strong>
-                    <span className="badge neutral">{detail.trainer.courses.length}</span>
+                    <div>
+                      <strong>Trainer courses</strong>
+                      <div className="actions" style={{ marginTop: 10 }}>
+                        <button
+                          className={courseFilter === "ALL" ? "button" : "button secondary"}
+                          onClick={() => setCourseFilter("ALL")}
+                          type="button"
+                        >
+                          All
+                          <span className="badge neutral">{detail.stats.courseCount}</span>
+                        </button>
+                        <button
+                          className={courseFilter === "OPEN_REPORTS" ? "button warning" : "button secondary"}
+                          onClick={() => setCourseFilter("OPEN_REPORTS")}
+                          type="button"
+                        >
+                          Open reports
+                          <span className="badge neutral">{detail.stats.openReportCount}</span>
+                        </button>
+                        <button
+                          className={courseFilter === "FROZEN" ? "button warning" : "button secondary"}
+                          onClick={() => setCourseFilter("FROZEN")}
+                          type="button"
+                        >
+                          Frozen
+                          <span className="badge neutral">{detail.stats.frozenCourseCount}</span>
+                        </button>
+                      </div>
+                    </div>
+                    <span className="badge neutral">{filteredCourses.length}</span>
                   </div>
                   <div className="scroll-x">
                     <table className="table">
@@ -266,19 +309,25 @@ export default function TrainerDetailPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {detail.trainer.courses.map((course) => (
+                        {filteredCourses.map((course) => (
                           <tr key={course.id}>
                             <td>
                               <Link href={`/courses/${course.id}`}>
                                 <strong>{course.title}</strong>
                               </Link>
+                              <div className="muted-row">{course.category || "No category"}</div>
                             </td>
                             <td>
                               {course.isFrozen ? "Frozen" : course.isPublished ? "Online" : "Offline"}
                             </td>
                             <td>{course.approvalStatus}</td>
                             <td>{course._count?.enrollments ?? 0}</td>
-                            <td>{course._count?.reports ?? 0}</td>
+                            <td>
+                              {course._count?.reports ?? 0}
+                              <div className="muted-row">
+                                Open: {course.openReportCount ?? 0}
+                              </div>
+                            </td>
                             <td>
                               {course.isFrozen ? (
                                 <button className="button" disabled={busy} onClick={() => void setCourseFrozen(course.id, false)} type="button">
@@ -292,6 +341,13 @@ export default function TrainerDetailPage() {
                             </td>
                           </tr>
                         ))}
+                        {filteredCourses.length === 0 ? (
+                          <tr>
+                            <td className="muted-row" colSpan={6}>
+                              No courses match this moderation filter yet.
+                            </td>
+                          </tr>
+                        ) : null}
                       </tbody>
                     </table>
                   </div>

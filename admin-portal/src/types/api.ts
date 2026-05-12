@@ -100,6 +100,7 @@ export type Course = {
   reviewedAt?: string | null;
   reviewedById?: string | null;
   viewCount?: number;
+  openReportCount?: number;
   deletedAt?: string | null;
   lectures?: Lecture[];
   dailyTasks?: DailyTask[];

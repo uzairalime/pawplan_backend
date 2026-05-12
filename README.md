@@ -76,6 +76,12 @@ npx prisma db push --accept-data-loss
 npm run seed
 ```
 
+Reset local demo data for frontend or QA:
+
+```bash
+npm run db:reset:demo
+```
+
 Phase 1 QA checklist:
 
 ```text
@@ -214,7 +220,9 @@ Portal features:
 - Publish validation so incomplete courses stay in draft/offline mode.
 - Course analytics for enrollments, progress, completion rate, and streaks.
 - Super admin trainer management.
+- Trainer detail moderation filters for frozen courses and courses with open reports.
 - Super admin audit log screen.
+- Audit log action badges, target links, and structured metadata formatting.
 - Paginated admin screens for trainers, users, courses, approvals, reports, quotes, and catalog.
 - Put courses offline or online.
 - Delete admin-created courses.
@@ -250,6 +258,7 @@ npm run test:all
 - OTP request, resend, verify, and admin login now have in-memory rate limiting.
 - Upload limits are centralized for profile images, course thumbnails, and course videos.
 - `npm run seed` now creates demo trainer, demo users, a demo course, a demo quote, and a demo moderation report.
+- `npm run db:reset:demo` force-resets the local SQLite database, regenerates Prisma client, reseeds demo data, and refreshes `prisma/test.db` for QA.
 - Super admin CSV exports:
   - `GET /api/admin/exports/users.csv`
   - `GET /api/admin/exports/trainers.csv`

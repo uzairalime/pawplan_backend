@@ -337,6 +337,44 @@ a:hover {
   font-size: 13px;
 }
 
+.inline-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  color: var(--secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.metadata-list {
+  display: grid;
+  gap: 8px;
+}
+
+.metadata-row {
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #faf7f1;
+}
+
+.metadata-key {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.metadata-value {
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
 .thumbnail {
   width: 80px;
   aspect-ratio: 16 / 10;
